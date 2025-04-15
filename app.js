@@ -14,66 +14,75 @@ document.getElementById('patientForm').addEventListener('submit', function(event
     const city = document.getElementById('city').value;
     const postalCode = document.getElementById('postalCode').value;
 
-    // Verificar si ya existe un paciente con el mismo documento
-    fetch(`https://hl7-fhir-ehr-gabriela-787.onrender.com/patient?identifier=${identifierValue}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.entry && data.entry.length > 0) {
-                alert('Ya existe un paciente con este documento de identidad.');
+    // Verificar si ya existe un paciente con ese identifier
+    fetch(`https://hl7-fhir-ehr-gabriela-787.onrender.com/patient?system=${encodeURIComponent(identifierSystem)}&value=${encodeURIComponent(identifierValue)}`)
+        .then(response => {
+            if (response.status === 204) {
+                // No existe, se puede crear
+                return null;
+            } else if (response.ok) {
+                // Ya existe un paciente
+                throw new Error('Ya existe un paciente registrado con ese documento.');
             } else {
-                // Crear el objeto Patient en formato FHIR
-                const patient = {
-                    resourceType: "Patient",
-                    name: [{
-                        use: "official",
-                        given: [name],
-                        family: familyName
-                    }],
-                    gender: gender,
-                    birthDate: birthDate,
-                    identifier: [{
-                        system: identifierSystem,
-                        value: identifierValue
-                    }],
-                    telecom: [{
-                        system: "phone",
-                        value: cellPhone,
-                        use: "home"
-                    }, {
-                        system: "email",
-                        value: email,
-                        use: "home"
-                    }],
-                    address: [{
-                        use: "home",
-                        line: [address],
-                        city: city,
-                        postalCode: postalCode,
-                        country: "Colombia"
-                    }]
-                };
-
-                // Enviar los datos usando Fetch API
-                fetch('https://hl7-fhir-ehr-gabriela-787.onrender.com/patient', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(patient)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Success:', data);
-                    alert('Paciente creado exitosamente!');
-                })
-                .catch((error) => {
-                    console.error('Error:', error);
-                    alert('Hubo un error al crear el paciente.');
-                });
+                throw new Error('Error consultando el paciente.');
             }
         })
+        .then(() => {
+            // Crear el objeto del paciente
+            const patient = {
+                resourceType: "Patient",
+                name: [{
+                    use: "official",
+                    given: [name],
+                    family: familyName
+                }],
+                gender: gender,
+                birthDate: birthDate,
+                identifier: [{
+                    system: identifierSystem,
+                    value: identifierValue
+                }],
+                telecom: [{
+                    system: "phone",
+                    value: cellPhone,
+                    use: "home"
+                }, {
+                    system: "email",
+                    value: email,
+                    use: "home"
+                }],
+                address: [{
+                    use: "home",
+                    line: [address],
+                    city: city,
+                    postalCode: postalCode,
+                    country: "Colombia"
+                }]
+            };
+
+            // Enviar los datos para crear el paciente
+            return fetch('https://hl7-fhir-ehr-gabriela-787.onrender.com/patient', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(patient)
+            });
+        })
+        .then(response => {
+            if (response && response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Error al crear el paciente.');
+            }
+        })
+        .then(data => {
+            alert('✅ Paciente registrado exitosamente.');
+            document.getElementById('patientForm').reset();
+        })
         .catch(error => {
-            console.error('Error al verificar el paciente:', error);
-            alert('Error al verificar el documento de identidad.');
+            alert(`❌ ${error.message}`);
+            console.error(error);
         });
 });
+
