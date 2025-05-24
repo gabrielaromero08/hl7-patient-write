@@ -14,18 +14,19 @@ document.getElementById('patientForm').addEventListener('submit', function(event
     const city = document.getElementById('city').value;
     const postalCode = document.getElementById('postalCode').value;
 
-    // Verificar si ya existe un paciente con ese identifier
-    fetch(`https://hl7-fhir-ehr-gabriela-787.onrender.com/patient?identifier=${encodeURIComponent(identifierValue)}`)
+    // Verificar si ya existe un paciente con ese documento
+    fetch(`https://hl7-fhir-ehr-gabriela-787.onrender.com/Patient?identifier=${encodeURIComponent(identifierValue)}`)
         .then(response => response.json())
         .then(data => {
-            if (data.total > 0) {
-                throw new Error('Ya existe un paciente registrado con ese documento.');
+            if (data.total && data.total > 0) {
+                // Ya existe un paciente con ese documento
+                throw new Error('Ya existe un paciente registrado con ese número de documento.');
             }
 
-            // Crear el objeto del paciente con el ID igual al número de documento
+            // Crear el objeto del paciente
             const patient = {
                 resourceType: "Patient",
-                id: identifierValue,  // <--- Aquí usamos el número de documento como ID
+                id: identifierValue, // Usamos el número de documento como ID
                 name: [{
                     use: "official",
                     given: [name],
@@ -56,7 +57,7 @@ document.getElementById('patientForm').addEventListener('submit', function(event
             };
 
             // Enviar los datos para crear el paciente
-            return fetch('https://hl7-fhir-ehr-gabriela-787.onrender.com/patient', {
+            return fetch('https://hl7-fhir-ehr-gabriela-787.onrender.com/Patient', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
