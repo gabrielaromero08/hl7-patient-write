@@ -14,20 +14,14 @@ document.getElementById('patientForm').addEventListener('submit', function(event
     const city = document.getElementById('city').value;
     const postalCode = document.getElementById('postalCode').value;
 
-    // Verificar si ya existe un paciente con ese identifier
-    fetch(https://hl7-fhir-ehr-gabriela-787.onrender.com/patient?system=${encodeURIComponent(identifierSystem)}&value=${encodeURIComponent(identifierValue)})
-        .then(response => {
-            if (response.status === 204) {
-                // No existe, se puede crear
-                return null;
-            } else if (response.ok) {
-                // Ya existe un paciente
+    // Verificar si ya existe un paciente con ese documento
+    fetch(`https://hl7-fhir-ehr-gabriela-787.onrender.com/Patient?identifier=${encodeURIComponent(identifierValue)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.total > 0) {
                 throw new Error('Ya existe un paciente registrado con ese documento.');
-            } else {
-                throw new Error('Error consultando el paciente.');
             }
-        })
-        .then(() => {
+
             // Crear el objeto del paciente
             const patient = {
                 resourceType: "Patient",
@@ -42,15 +36,18 @@ document.getElementById('patientForm').addEventListener('submit', function(event
                     system: identifierSystem,
                     value: identifierValue
                 }],
-                telecom: [{
-                    system: "phone",
-                    value: cellPhone,
-                    use: "home"
-                }, {
-                    system: "email",
-                    value: email,
-                    use: "home"
-                }],
+                telecom: [
+                    {
+                        system: "phone",
+                        value: cellPhone,
+                        use: "home"
+                    },
+                    {
+                        system: "email",
+                        value: email,
+                        use: "home"
+                    }
+                ],
                 address: [{
                     use: "home",
                     line: [address],
@@ -61,7 +58,7 @@ document.getElementById('patientForm').addEventListener('submit', function(event
             };
 
             // Enviar los datos para crear el paciente
-            return fetch('https://hl7-fhir-ehr-gabriela-787.onrender.com/patient', {
+            return fetch('https://hl7-fhir-ehr-gabriela-787.onrender.com/Patient', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -70,18 +67,17 @@ document.getElementById('patientForm').addEventListener('submit', function(event
             });
         })
         .then(response => {
-            if (response && response.ok) {
-                return response.json();
-            } else {
+            if (!response.ok) {
                 throw new Error('Error al crear el paciente.');
             }
+            return response.json();
         })
         .then(data => {
             alert('✅ Paciente registrado exitosamente.');
             document.getElementById('patientForm').reset();
         })
         .catch(error => {
-            alert(❌ ${error.message});
+            alert(`❌ ${error.message}`);
             console.error(error);
         });
 });
