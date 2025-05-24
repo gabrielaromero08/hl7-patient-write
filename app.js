@@ -15,22 +15,17 @@ document.getElementById('patientForm').addEventListener('submit', function(event
     const postalCode = document.getElementById('postalCode').value;
 
     // Verificar si ya existe un paciente con ese identifier
-    fetch(`https://hl7-fhir-ehr-gabriela-787.onrender.com/patient?system=${encodeURIComponent(identifierSystem)}&value=${encodeURIComponent(identifierValue)}`)
-        .then(response => {
-            if (response.status === 204) {
-                // No existe, se puede crear
-                return null;
-            } else if (response.ok) {
-                // Ya existe un paciente
+    fetch(`https://hl7-fhir-ehr-gabriela-787.onrender.com/patient?identifier=${encodeURIComponent(identifierValue)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.total > 0) {
                 throw new Error('Ya existe un paciente registrado con ese documento.');
-            } else {
-                throw new Error('Error consultando el paciente.');
             }
-        })
-        .then(() => {
-            // Crear el objeto del paciente
+
+            // Crear el objeto del paciente con el ID igual al número de documento
             const patient = {
                 resourceType: "Patient",
+                id: identifierValue,  // <--- Aquí usamos el número de documento como ID
                 name: [{
                     use: "official",
                     given: [name],
@@ -70,11 +65,10 @@ document.getElementById('patientForm').addEventListener('submit', function(event
             });
         })
         .then(response => {
-            if (response && response.ok) {
-                return response.json();
-            } else {
+            if (!response.ok) {
                 throw new Error('Error al crear el paciente.');
             }
+            return response.json();
         })
         .then(data => {
             alert('✅ Paciente registrado exitosamente.');
@@ -85,4 +79,3 @@ document.getElementById('patientForm').addEventListener('submit', function(event
             console.error(error);
         });
 });
-
