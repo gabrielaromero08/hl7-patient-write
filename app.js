@@ -14,15 +14,21 @@ document.getElementById('patientForm').addEventListener('submit', function(event
     const city = document.getElementById('city').value;
     const postalCode = document.getElementById('postalCode').value;
 
-    // Consultar si ya existe un paciente con ese documento
-    fetch(`https://hl7-fhir-ehr-gabriela-787.onrender.com/Patient?identifier=${encodeURIComponent(identifierValue)}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.total > 0) {
-                throw new Error('❌ Ya existe un paciente registrado con ese número de documento.');
+    // Verificar si ya existe un paciente con ese identifier
+    fetch(https://hl7-fhir-ehr-gabriela-787.onrender.com/patient?system=${encodeURIComponent(identifierSystem)}&value=${encodeURIComponent(identifierValue)})
+        .then(response => {
+            if (response.status === 204) {
+                // No existe, se puede crear
+                return null;
+            } else if (response.ok) {
+                // Ya existe un paciente
+                throw new Error('Ya existe un paciente registrado con ese documento.');
+            } else {
+                throw new Error('Error consultando el paciente.');
             }
-
-            // Crear el objeto del paciente (sin ID manual)
+        })
+        .then(() => {
+            // Crear el objeto del paciente
             const patient = {
                 resourceType: "Patient",
                 name: [{
@@ -54,8 +60,8 @@ document.getElementById('patientForm').addEventListener('submit', function(event
                 }]
             };
 
-            // Crear el paciente con POST
-            return fetch('https://hl7-fhir-ehr-gabriela-787.onrender.com/Patient', {
+            // Enviar los datos para crear el paciente
+            return fetch('https://hl7-fhir-ehr-gabriela-787.onrender.com/patient', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -64,17 +70,18 @@ document.getElementById('patientForm').addEventListener('submit', function(event
             });
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error('❌ Error al crear el paciente.');
+            if (response && response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Error al crear el paciente.');
             }
-            return response.json();
         })
         .then(data => {
             alert('✅ Paciente registrado exitosamente.');
             document.getElementById('patientForm').reset();
         })
         .catch(error => {
-            alert(error.message);
+            alert(❌ ${error.message});
             console.error(error);
         });
 });
