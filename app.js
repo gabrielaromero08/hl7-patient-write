@@ -14,19 +14,17 @@ document.getElementById('patientForm').addEventListener('submit', function(event
     const city = document.getElementById('city').value;
     const postalCode = document.getElementById('postalCode').value;
 
-    // Verificar si ya existe un paciente con ese documento
+    // Consultar si ya existe un paciente con ese documento
     fetch(`https://hl7-fhir-ehr-gabriela-787.onrender.com/Patient?identifier=${encodeURIComponent(identifierValue)}`)
         .then(response => response.json())
         .then(data => {
-            if (data.total && data.total > 0) {
-                // Ya existe un paciente con ese documento
-                throw new Error('Ya existe un paciente registrado con ese número de documento.');
+            if (data.total > 0) {
+                throw new Error('❌ Ya existe un paciente registrado con ese número de documento.');
             }
 
-            // Crear el objeto del paciente
+            // Crear el objeto del paciente (sin ID manual)
             const patient = {
                 resourceType: "Patient",
-                id: identifierValue, // Usamos el número de documento como ID
                 name: [{
                     use: "official",
                     given: [name],
@@ -56,7 +54,7 @@ document.getElementById('patientForm').addEventListener('submit', function(event
                 }]
             };
 
-            // Enviar los datos para crear el paciente
+            // Crear el paciente con POST
             return fetch('https://hl7-fhir-ehr-gabriela-787.onrender.com/Patient', {
                 method: 'POST',
                 headers: {
@@ -67,7 +65,7 @@ document.getElementById('patientForm').addEventListener('submit', function(event
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Error al crear el paciente.');
+                throw new Error('❌ Error al crear el paciente.');
             }
             return response.json();
         })
@@ -76,7 +74,7 @@ document.getElementById('patientForm').addEventListener('submit', function(event
             document.getElementById('patientForm').reset();
         })
         .catch(error => {
-            alert(`❌ ${error.message}`);
+            alert(error.message);
             console.error(error);
         });
 });
